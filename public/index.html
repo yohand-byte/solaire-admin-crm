@@ -199,7 +199,6 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
   import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-  import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app-check.js";
   import { getFirestore, collection, addDoc, getDocs, serverTimestamp, query, orderBy, limit, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -213,7 +212,6 @@
   };
 
   const app = initializeApp(firebaseConfig);
-  initializeAppCheck(app, { provider: new ReCaptchaV3Provider('marcokimyohan'), isTokenAutoRefreshEnabled: true });
   const auth = getAuth(app);
   const db = getFirestore(app);
 
@@ -257,6 +255,7 @@
   let fileSnapshot = [];
 
   function renderLeadViews(rows) {
+    rows = Array.isArray(rows) ? rows : [];
     const columns = [
       { title: 'Nouveau', key: 'Nouveau' },
       { title: 'Contacté', key: 'Contacté' },
@@ -312,6 +311,7 @@
   }
 
   function applyLeadFilters() {
+    if (!Array.isArray(leadSnapshot)) { leadSnapshot = []; }
     const status = document.getElementById('leadStatusFilter').value;
     const q = document.getElementById('leadSearch').value.toLowerCase();
     const filtered = leadSnapshot.filter(l => {
