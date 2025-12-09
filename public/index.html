@@ -246,6 +246,7 @@
   onAuthStateChanged(auth, (user) => {
     if (user) {
       authOverlay.classList.add('hidden');
+      authOverlay.style.display = 'none';
       userInfo.textContent = `${user.email} — Déconnexion`;
       userInfo.style.cursor = 'pointer';
       userInfo.onclick = () => signOut(auth);
@@ -254,6 +255,7 @@
       renderFiles();
     } else {
       authOverlay.classList.remove('hidden');
+      authOverlay.style.display = 'flex';
       userInfo.textContent = '';
     }
   });
