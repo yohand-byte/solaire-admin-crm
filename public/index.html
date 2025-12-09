@@ -475,14 +475,28 @@
       const id = e.target.getAttribute('data-id');
       const lead = leadSnapshot.find(l => l.id === id);
       if (!lead) return;
+      // Mapping rapide selon le prompt
+      const segment = (() => {
+        const val = (lead.blocked_files_count || '').replace(/[^0-9+]/g,'');
+        if (!val) return 'Petit';
+        if (val.includes('+') || parseInt(val,10) > 10) return 'Gros';
+        if (parseInt(val,10) >= 6) return 'Moyen';
+        return 'Petit';
+      })();
       await addDoc(collection(db, 'clients'), {
         company: lead.company || lead.fullName || '',
         contact: lead.fullName || '',
         email: lead.email || '',
         phone: lead.phone || '',
         pack: lead.desired_pack || lead.priority || '',
-        segment: 'Petit',
+        segment,
         status: 'Actif',
+        billing: '',
+        contractStart: '',
+        contractEnd: '',
+        customRate: '',
+        discount: '',
+        paymentTerms: 30,
         createdAt: serverTimestamp()
       });
       await updateDoc(doc(db, 'leads', id), { status: 'Converti', client_id_created: true, updatedAt: serverTimestamp() });
