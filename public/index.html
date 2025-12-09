@@ -137,8 +137,8 @@
         </form>
       </div>
       <div class="card">
-        <h2>Leads récents</h2>
-        <div id="leadList" class="alert">Chargement...</div>
+        <h2>Kanban Leads</h2>
+        <div id="leadKanban" style="overflow-x:auto; white-space:nowrap; display:flex; gap:12px;"></div>
       </div>
     </div>
   </section>
@@ -149,16 +149,28 @@
         <h2>Nouveau client</h2>
         <form id="clientForm">
           <div><label>Entreprise</label><input name="company" required /></div>
-          <div><label>Contact</label><input name="contact" required /></div>
-          <div><label>Email</label><input name="email" type="email" /></div>
-          <div><label>Téléphone</label><input name="phone" /></div>
+          <div><label>Contact principal</label><input name="contact" required /></div>
+          <div class="grid" style="grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap:10px;">
+            <div><label>Email</label><input name="email" type="email" /></div>
+            <div><label>Téléphone</label><input name="phone" /></div>
+          </div>
+          <div class="grid" style="grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap:10px;">
+            <div><label>SIRET</label><input name="siret" /></div>
+            <div><label>Segment</label><select name="segment"><option>Petit</option><option>Moyen</option><option>Gros</option></select></div>
+            <div><label>Statut</label><select name="status"><option>Actif</option><option>Inactif</option><option>VIP</option></select></div>
+          </div>
           <div><label>Pack</label><select name="pack"><option>Validation</option><option>Mise en service</option><option>Zéro Stress</option></select></div>
+          <div><label>Adresse facturation</label><input name="billing" /></div>
           <button class="primary" type="submit">Créer</button>
         </form>
       </div>
       <div class="card">
         <h2>Clients</h2>
         <div id="clientList" class="alert">Chargement...</div>
+      </div>
+      <div class="card">
+        <h2>Détails client</h2>
+        <div id="clientDetail" class="alert">Sélectionnez un client.</div>
       </div>
     </div>
   </section>
@@ -173,12 +185,21 @@
           <div><label>Adresse installation</label><input name="address" required /></div>
           <div><label>Pack</label><select name="pack"><option>Validation</option><option>Mise en service</option><option>Zéro Stress</option></select></div>
           <div><label>Statut global</label><select name="status"><option>En attente documents</option><option>En cours</option><option>Bloqué</option><option>Finalisé</option></select></div>
+          <div class="grid" style="grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap:10px;">
+            <div><label>Consuel</label><select name="consuel_status"><option>À faire</option><option>Dossier constitué</option><option>Déposé</option><option>Visite programmée</option><option>Attestation reçue</option></select></div>
+            <div><label>Enedis</label><select name="enedis_status"><option>À faire</option><option>Déposé</option><option>Devis reçu</option><option>Travaux programmés</option><option>Mise en service</option></select></div>
+            <div><label>EDF OA</label><select name="edfoa_status"><option>Non applicable</option><option>À faire</option><option>Déposé</option><option>En cours d'étude</option><option>Contrat signé</option></select></div>
+          </div>
           <button class="primary" type="submit">Créer</button>
         </form>
       </div>
       <div class="card">
         <h2>Dossiers</h2>
         <div id="fileList" class="alert">Chargement...</div>
+      </div>
+      <div class="card">
+        <h2>Détails dossier</h2>
+        <div id="fileDetail" class="alert">Sélectionnez un dossier.</div>
       </div>
     </div>
   </section>
@@ -188,7 +209,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
   import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-  import { getFirestore, collection, addDoc, getDocs, serverTimestamp, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, getDocs, serverTimestamp, query, orderBy, limit, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBdQP61dhT8it9_Ua-U8u-xgh40DLnfNbg",
@@ -243,9 +264,51 @@
 
   async function renderLeads() {
     const list = document.getElementById('leadList');
-    list.innerHTML = 'Chargement...';
-    const snap = await getDocs(query(collection(db, 'leads'), orderBy('createdAt', 'desc'), limit(20)));
+    list.innerHTML = '';
+    const snap = await getDocs(query(collection(db, 'leads'), orderBy('createdAt', 'desc'), limit(50)));
     if (snap.empty) { list.innerHTML = '<div class="alert">Aucun lead pour le moment.</div>'; return; }
+
+    const columns = [
+      { title: 'Nouveau', key: 'Nouveau' },
+      { title: 'Contacté', key: 'Contacté' },
+      { title: 'Qualifié', key: 'Qualifié' },
+      { title: 'Devis envoyé', key: 'Devis envoyé' },
+      { title: 'Gagné', key: 'Gagné' },
+      { title: 'Perdu', key: 'Perdu' }
+    ];
+    const grouped = {};
+    columns.forEach(c => grouped[c.key] = []);
+    snap.forEach(doc => {
+      const d = doc.data();
+      grouped[d.status || 'Nouveau'].push({ id: doc.id, ...d });
+    });
+
+    const kanban = document.getElementById('leadKanban');
+    kanban.innerHTML = '';
+    columns.forEach(col => {
+      const items = grouped[col.key] || [];
+      const card = document.createElement('div');
+      card.style.minWidth = '240px';
+      card.style.background = '#f8fafc';
+      card.style.border = '1px solid #e2e8f0';
+      card.style.borderRadius = '12px';
+      card.style.padding = '10px';
+      card.innerHTML = `<div style="font-weight:700;margin-bottom:8px;">${col.title} (${items.length})</div>`;
+      items.forEach(it => {
+        const node = document.createElement('div');
+        node.style.marginBottom = '8px';
+        node.style.padding = '8px';
+        node.style.borderRadius = '10px';
+        node.style.background = 'white';
+        node.style.border = '1px solid #e2e8f0';
+        node.innerHTML = `<div style="font-weight:600">${it.fullName || ''}</div>
+          <div style="font-size:12px;color:#475569">${it.email || ''}</div>
+          <div class="pill" style="margin-top:6px;">${it.priority || ''}</div>`;
+      });
+      kanban.appendChild(card);
+    });
+
+    // Also render table
     let html = '<table><thead><tr><th>Nom</th><th>Source</th><th>Priorité</th><th>Statut</th></tr></thead><tbody>';
     snap.forEach(doc => {
       const d = doc.data();
@@ -258,29 +321,61 @@
   async function renderClients() {
     const list = document.getElementById('clientList');
     list.innerHTML = 'Chargement...';
-    const snap = await getDocs(query(collection(db, 'clients'), orderBy('createdAt', 'desc'), limit(20)));
+    const snap = await getDocs(query(collection(db, 'clients'), orderBy('createdAt', 'desc'), limit(50)));
     if (snap.empty) { list.innerHTML = '<div class="alert">Aucun client.</div>'; return; }
-    let html = '<table><thead><tr><th>Entreprise</th><th>Contact</th><th>Pack</th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>Entreprise</th><th>Contact</th><th>Pack</th><th>Segment</th></tr></thead><tbody>';
     snap.forEach(doc => {
       const d = doc.data();
-      html += `<tr><td>${d.company || ''}</td><td>${d.contact || ''}</td><td>${d.pack || ''}</td></tr>`;
+      html += `<tr data-id="${doc.id}" class="client-row" style="cursor:pointer;"><td>${d.company || ''}</td><td>${d.contact || ''}</td><td>${d.pack || ''}</td><td>${d.segment || ''}</td></tr>`;
     });
     html += '</tbody></table>';
     list.innerHTML = html;
+
+    document.querySelectorAll('.client-row').forEach(row => {
+      row.addEventListener('click', async () => {
+        const id = row.getAttribute('data-id');
+        const snap = await getDoc(doc(db, 'clients', id));
+        if (!snap.exists()) return;
+        const c = snap.data();
+        document.getElementById('clientDetail').innerHTML = `
+          <div style="font-weight:700;font-size:16px;">${c.company || ''}</div>
+          <div style="margin-top:6px;">Contact: ${c.contact || ''} — ${c.email || ''}</div>
+          <div style="margin-top:6px;">Pack: ${c.pack || ''} | Segment: ${c.segment || ''} | Statut: ${c.status || ''}</div>
+          <div style="margin-top:6px;">SIRET: ${c.siret || ''}</div>
+          <div style="margin-top:6px;">Adresse facturation: ${c.billing || ''}</div>
+        `;
+      });
+    });
   }
 
   async function renderFiles() {
     const list = document.getElementById('fileList');
     list.innerHTML = 'Chargement...';
-    const snap = await getDocs(query(collection(db, 'files'), orderBy('createdAt', 'desc'), limit(20)));
+    const snap = await getDocs(query(collection(db, 'files'), orderBy('createdAt', 'desc'), limit(50)));
     if (snap.empty) { list.innerHTML = '<div class="alert">Aucun dossier.</div>'; return; }
     let html = '<table><thead><tr><th>Dossier</th><th>Client</th><th>Pack</th><th>Statut</th></tr></thead><tbody>';
     snap.forEach(doc => {
       const d = doc.data();
-      html += `<tr><td>${d.fileNumber || doc.id}</td><td>${d.client || ''}</td><td>${d.pack || ''}</td><td>${d.status || ''}</td></tr>`;
+      html += `<tr data-id="${doc.id}" class="file-row" style="cursor:pointer;"><td>${d.fileNumber || doc.id}</td><td>${d.client || ''}</td><td>${d.pack || ''}</td><td>${d.status || ''}</td></tr>`;
     });
     html += '</tbody></table>';
     list.innerHTML = html;
+
+    document.querySelectorAll('.file-row').forEach(row => {
+      row.addEventListener('click', async () => {
+        const id = row.getAttribute('data-id');
+        const snap = await getDoc(doc(db, 'files', id));
+        if (!snap.exists()) return;
+        const f = snap.data();
+        document.getElementById('fileDetail').innerHTML = `
+          <div style="font-weight:700;font-size:16px;">${f.fileNumber || id}</div>
+          <div style="margin-top:6px;">Client: ${f.client || ''} | Pack: ${f.pack || ''} | Statut: ${f.status || ''}</div>
+          <div style="margin-top:6px;">Consuel: ${f.consuel_status || ''} | Enedis: ${f.enedis_status || ''} | EDF OA: ${f.edfoa_status || ''}</div>
+          <div style="margin-top:6px;">Adresse: ${f.address || ''}</div>
+          <div style="margin-top:6px;">Client final: ${f.finalClient || ''}</div>
+        `;
+      });
+    });
   }
 
   document.getElementById('leadForm').addEventListener('submit', async (e) => {
