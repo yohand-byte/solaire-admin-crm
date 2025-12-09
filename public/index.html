@@ -135,6 +135,14 @@
           <div><label>Notes</label><textarea name="notes"></textarea></div>
           <button class="primary" type="submit">Ajouter</button>
         </form>
+        <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+          <select id="leadStatusFilter">
+            <option value="">Filtrer par statut</option>
+            <option>Nouveau</option><option>Contacté</option><option>Qualifié</option><option>Devis envoyé</option><option>Gagné</option><option>Perdu</option>
+          </select>
+          <input id="leadSearch" placeholder="Recherche nom/email" style="flex:1; min-width:180px; padding:10px; border-radius:10px; border:1px solid #cbd5e1; background:#f8fafc;">
+          <button id="leadExport" type="button" class="primary" style="padding:10px 12px;">Exporter CSV</button>
+        </div>
       </div>
       <div class="card">
         <h2>Kanban Leads</h2>
@@ -161,11 +169,28 @@
           </div>
           <div><label>Pack</label><select name="pack"><option>Validation</option><option>Mise en service</option><option>Zéro Stress</option></select></div>
           <div><label>Adresse facturation</label><input name="billing" /></div>
+          <div class="grid" style="grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap:10px;">
+            <div><label>Date début contrat</label><input name="contractStart" type="date" /></div>
+            <div><label>Date fin contrat</label><input name="contractEnd" type="date" /></div>
+            <div><label>Tarif négocié (€)</label><input name="customRate" type="number" step="0.01" /></div>
+            <div><label>Remise (%)</label><input name="discount" type="number" step="0.1" /></div>
+            <div><label>Conditions paiement (jours)</label><input name="paymentTerms" type="number" /></div>
+          </div>
           <button class="primary" type="submit">Créer</button>
         </form>
       </div>
       <div class="card">
         <h2>Clients</h2>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+          <input id="clientSearch" placeholder="Recherche entreprise/contact" style="flex:1; min-width:180px; padding:10px; border-radius:10px; border:1px solid #cbd5e1; background:#f8fafc;">
+          <select id="clientSegmentFilter">
+            <option value="">Segment</option><option>Petit</option><option>Moyen</option><option>Gros</option>
+          </select>
+          <select id="clientStatusFilter">
+            <option value="">Statut</option><option>Actif</option><option>Inactif</option><option>VIP</option>
+          </select>
+          <button id="clientExport" type="button" class="primary" style="padding:10px 12px;">Exporter CSV</button>
+        </div>
         <div id="clientList" class="alert">Chargement...</div>
       </div>
       <div class="card">
@@ -190,11 +215,22 @@
             <div><label>Enedis</label><select name="enedis_status"><option>À faire</option><option>Déposé</option><option>Devis reçu</option><option>Travaux programmés</option><option>Mise en service</option></select></div>
             <div><label>EDF OA</label><select name="edfoa_status"><option>Non applicable</option><option>À faire</option><option>Déposé</option><option>En cours d'étude</option><option>Contrat signé</option></select></div>
           </div>
+          <div class="grid" style="grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap:10px;">
+            <div><label>Prix (€)</label><input name="price" type="number" step="0.01" /></div>
+            <div><label>Date facturation prévue</label><input name="invoicingDate" type="date" /></div>
+          </div>
           <button class="primary" type="submit">Créer</button>
         </form>
       </div>
       <div class="card">
         <h2>Dossiers</h2>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+          <input id="fileSearch" placeholder="Recherche dossier/client" style="flex:1; min-width:180px; padding:10px; border-radius:10px; border:1px solid #cbd5e1; background:#f8fafc;">
+          <select id="fileStatusFilter">
+            <option value="">Statut</option><option>En attente documents</option><option>En cours</option><option>Bloqué</option><option>Finalisé</option>
+          </select>
+          <button id="fileExport" type="button" class="primary" style="padding:10px 12px;">Exporter CSV</button>
+        </div>
         <div id="fileList" class="alert">Chargement...</div>
       </div>
       <div class="card">
@@ -269,12 +305,11 @@
     document.getElementById(tab.dataset.tab).style.display = 'block';
   }));
 
-  async function renderLeads() {
-    const list = document.getElementById('leadList');
-    list.innerHTML = '';
-    const snap = await getDocs(query(collection(db, 'leads'), orderBy('createdAt', 'desc'), limit(50)));
-    if (snap.empty) { list.innerHTML = '<div class="alert">Aucun lead pour le moment.</div>'; return; }
+  let leadSnapshot = [];
+  let clientSnapshot = [];
+  let fileSnapshot = [];
 
+  function renderLeadViews(rows) {
     const columns = [
       { title: 'Nouveau', key: 'Nouveau' },
       { title: 'Contacté', key: 'Contacté' },
@@ -285,10 +320,7 @@
     ];
     const grouped = {};
     columns.forEach(c => grouped[c.key] = []);
-    snap.forEach(doc => {
-      const d = doc.data();
-      grouped[d.status || 'Nouveau'].push({ id: doc.id, ...d });
-    });
+    rows.forEach(r => grouped[r.status || 'Nouveau'].push(r));
 
     const kanban = document.getElementById('leadKanban');
     kanban.innerHTML = '';
@@ -328,29 +360,42 @@
       kanban.appendChild(card);
     });
 
-    // Also render table
+    const list = document.getElementById('leadList');
+    if (rows.length === 0) { list.innerHTML = '<div class="alert">Aucun lead pour le moment.</div>'; return; }
     let html = '<table><thead><tr><th>Nom</th><th>Source</th><th>Priorité</th><th>Statut</th></tr></thead><tbody>';
-    snap.forEach(doc => {
-      const d = doc.data();
+    rows.forEach(d => {
       html += `<tr><td>${d.fullName || ''}</td><td>${d.source || ''}</td><td>${d.priority || ''}</td><td><span class="badge status-${(d.status||'new').toLowerCase()}">${d.status || 'Nouveau'}</span></td></tr>`;
     });
     html += '</tbody></table>';
     list.innerHTML = html;
   }
 
-  async function renderClients() {
+  function applyLeadFilters() {
+    const status = document.getElementById('leadStatusFilter').value;
+    const q = document.getElementById('leadSearch').value.toLowerCase();
+    const filtered = leadSnapshot.filter(l => {
+      const okStatus = status ? (l.status === status) : true;
+      const okSearch = q ? ((l.fullName || '').toLowerCase().includes(q) || (l.email || '').toLowerCase().includes(q)) : true;
+      return okStatus && okSearch;
+    });
+    renderLeadViews(filtered);
+  }
+
+  async function renderLeads() {
+    const snap = await getDocs(query(collection(db, 'leads'), orderBy('createdAt', 'desc'), limit(50)));
+    leadSnapshot = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    applyLeadFilters();
+  }
+
+  function renderClientTable(rows) {
     const list = document.getElementById('clientList');
-    list.innerHTML = 'Chargement...';
-    const snap = await getDocs(query(collection(db, 'clients'), orderBy('createdAt', 'desc'), limit(50)));
-    if (snap.empty) { list.innerHTML = '<div class="alert">Aucun client.</div>'; return; }
+    if (rows.length === 0) { list.innerHTML = '<div class="alert">Aucun client.</div>'; return; }
     let html = '<table><thead><tr><th>Entreprise</th><th>Contact</th><th>Pack</th><th>Segment</th></tr></thead><tbody>';
-    snap.forEach(doc => {
-      const d = doc.data();
-      html += `<tr data-id="${doc.id}" class="client-row" style="cursor:pointer;"><td>${d.company || ''}</td><td>${d.contact || ''}</td><td>${d.pack || ''}</td><td>${d.segment || ''}</td></tr>`;
+    rows.forEach(r => {
+      html += `<tr data-id="${r.id}" class="client-row" style="cursor:pointer;"><td>${r.company || ''}</td><td>${r.contact || ''}</td><td>${r.pack || ''}</td><td>${r.segment || ''}</td></tr>`;
     });
     html += '</tbody></table>';
     list.innerHTML = html;
-
     document.querySelectorAll('.client-row').forEach(row => {
       row.addEventListener('click', async () => {
         const id = row.getAttribute('data-id');
@@ -363,20 +408,37 @@
           <div style="margin-top:6px;">Pack: ${c.pack || ''} | Segment: ${c.segment || ''} | Statut: ${c.status || ''}</div>
           <div style="margin-top:6px;">SIRET: ${c.siret || ''}</div>
           <div style="margin-top:6px;">Adresse facturation: ${c.billing || ''}</div>
+          <div style="margin-top:6px;">Contrat: ${c.contractStart || ''} → ${c.contractEnd || ''} | Tarif: ${c.customRate || ''}€ | Remise: ${c.discount || ''}% | Paiement: ${c.paymentTerms || ''}j</div>
         `;
       });
     });
   }
 
-  async function renderFiles() {
+  function applyClientFilters() {
+    const q = document.getElementById('clientSearch').value.toLowerCase();
+    const seg = document.getElementById('clientSegmentFilter').value;
+    const st = document.getElementById('clientStatusFilter').value;
+    const filtered = clientSnapshot.filter(c => {
+      const okQ = q ? ((c.company || '').toLowerCase().includes(q) || (c.contact || '').toLowerCase().includes(q)) : true;
+      const okSeg = seg ? c.segment === seg : true;
+      const okSt = st ? c.status === st : true;
+      return okQ && okSeg && okSt;
+    });
+    renderClientTable(filtered);
+  }
+
+  async function renderClients() {
+    const snap = await getDocs(query(collection(db, 'clients'), orderBy('createdAt', 'desc'), limit(50)));
+    clientSnapshot = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    applyClientFilters();
+  }
+
+  function renderFileTable(rows) {
     const list = document.getElementById('fileList');
-    list.innerHTML = 'Chargement...';
-    const snap = await getDocs(query(collection(db, 'files'), orderBy('createdAt', 'desc'), limit(50)));
-    if (snap.empty) { list.innerHTML = '<div class="alert">Aucun dossier.</div>'; return; }
+    if (rows.length === 0) { list.innerHTML = '<div class="alert">Aucun dossier.</div>'; return; }
     let html = '<table><thead><tr><th>Dossier</th><th>Client</th><th>Pack</th><th>Statut</th></tr></thead><tbody>';
-    snap.forEach(doc => {
-      const d = doc.data();
-      html += `<tr data-id="${doc.id}" class="file-row" style="cursor:pointer;"><td>${d.fileNumber || doc.id}</td><td>${d.client || ''}</td><td>${d.pack || ''}</td><td>${d.status || ''}</td></tr>`;
+    rows.forEach(r => {
+      html += `<tr data-id="${r.id}" class="file-row" style="cursor:pointer;"><td>${r.fileNumber || r.id}</td><td>${r.client || ''}</td><td>${r.pack || ''}</td><td>${r.status || ''}</td></tr>`;
     });
     html += '</tbody></table>';
     list.innerHTML = html;
@@ -393,9 +455,27 @@
           <div style="margin-top:6px;">Consuel: ${f.consuel_status || ''} | Enedis: ${f.enedis_status || ''} | EDF OA: ${f.edfoa_status || ''}</div>
           <div style="margin-top:6px;">Adresse: ${f.address || ''}</div>
           <div style="margin-top:6px;">Client final: ${f.finalClient || ''}</div>
+          <div style="margin-top:6px;">Prix: ${f.price || ''}€ | Facturation prévue: ${f.invoicingDate || ''}</div>
         `;
       });
     });
+  }
+
+  function applyFileFilters() {
+    const q = document.getElementById('fileSearch').value.toLowerCase();
+    const st = document.getElementById('fileStatusFilter').value;
+    const filtered = fileSnapshot.filter(f => {
+      const okQ = q ? ((f.fileNumber || '').toLowerCase().includes(q) || (f.client || '').toLowerCase().includes(q)) : true;
+      const okSt = st ? f.status === st : true;
+      return okQ && okSt;
+    });
+    renderFileTable(filtered);
+  }
+
+  async function renderFiles() {
+    const snap = await getDocs(query(collection(db, 'files'), orderBy('createdAt', 'desc'), limit(50)));
+    fileSnapshot = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    applyFileFilters();
   }
 
   document.getElementById('leadForm').addEventListener('submit', async (e) => {
@@ -426,6 +506,33 @@
     renderFiles();
     alert('Dossier créé');
   });
+
+  // Filters & export
+  document.getElementById('leadStatusFilter').addEventListener('change', applyLeadFilters);
+  document.getElementById('leadSearch').addEventListener('input', applyLeadFilters);
+  document.getElementById('leadExport').addEventListener('click', () => exportCSV(leadSnapshot, ['fullName','email','phone','source','priority','status']));
+
+  document.getElementById('clientSearch').addEventListener('input', () => applyClientFilters && applyClientFilters());
+  document.getElementById('clientSegmentFilter').addEventListener('change', () => applyClientFilters && applyClientFilters());
+  document.getElementById('clientStatusFilter').addEventListener('change', () => applyClientFilters && applyClientFilters());
+  document.getElementById('clientExport').addEventListener('click', () => exportCSV(clientSnapshot, ['company','contact','email','phone','pack','segment','status','siret','billing']));
+
+  document.getElementById('fileSearch').addEventListener('input', () => applyFileFilters && applyFileFilters());
+  document.getElementById('fileStatusFilter').addEventListener('change', () => applyFileFilters && applyFileFilters());
+  document.getElementById('fileExport').addEventListener('click', () => exportCSV(fileSnapshot, ['fileNumber','client','finalClient','pack','status','consuel_status','enedis_status','edfoa_status','price','invoicingDate']));
+
+  function exportCSV(rows, fields) {
+    if (!rows || rows.length === 0) return alert('Rien à exporter');
+    const header = fields.join(',');
+    const body = rows.map(r => fields.map(f => `"${(r[f]||'').toString().replace(/\"/g,'\"\"')}"`).join(',')).join('\\n');
+    const blob = new Blob([header + '\\n' + body], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'export.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 </script>
 </body>
 </html>
