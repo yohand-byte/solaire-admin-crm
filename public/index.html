@@ -8,93 +8,36 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --primary: #2563eb;
-      --accent: #10b981;
-      --bg: #f3f4f6;
-      --card: #ffffff;
-      --text: #0f172a;
-    }
+    :root { --primary:#2563eb; --accent:#10b981; --bg:#f3f4f6; --card:#ffffff; --text:#0f172a; }
     * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-    }
-    header {
-      background: #0f172a;
-      color: white;
-      padding: 16px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-    header h1 { margin: 0; font-size: 20px; }
-    main { padding: 24px; max-width: 1200px; margin: 0 auto; }
-    .tabs { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
-    .tab {
-      padding: 10px 14px;
-      border-radius: 10px;
-      border: 1px solid #cbd5e1;
-      background: var(--card);
-      cursor: pointer;
-      font-weight: 600;
-      transition: all 0.2s ease;
-    }
-    .tab.active { background: var(--primary); color: white; border-color: var(--primary); }
-    .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
-    .card {
-      background: var(--card);
-      border-radius: 14px;
-      padding: 16px;
-      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
-      border: 1px solid #e2e8f0;
-    }
-    h2 { margin: 0 0 12px 0; font-size: 18px; }
-    form { display: grid; gap: 10px; }
-    label { font-size: 13px; font-weight: 600; color: #475569; }
-    input, select, textarea {
-      width: 100%;
-      padding: 10px;
-      border-radius: 10px;
-      border: 1px solid #cbd5e1;
-      font: inherit;
-      background: #f8fafc;
-    }
-    textarea { min-height: 70px; }
-    button.primary {
-      background: linear-gradient(135deg, var(--primary), #1d4ed8);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      padding: 10px 14px;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 10px 25px rgba(37, 99, 235, 0.35);
-    }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
-    th { background: #f8fafc; }
-    .badge { padding: 4px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; }
-    .status-new { background: #e0e7ff; color: #312e81; }
-    .status-contacted { background: #dbeafe; color: #1e3a8a; }
-    .status-qualified { background: #dcfce7; color: #166534; }
-    .status-quoted { background: #fef9c3; color: #854d0e; }
-    .status-won { background: #d1fae5; color: #065f46; }
-    .status-lost { background: #fee2e2; color: #991b1b; }
-    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; background: #eef2ff; color: #3730a3; border-radius: 999px; font-size: 13px; }
-    .alert { border-left: 4px solid var(--accent); padding: 10px 12px; background: #ecfdf3; border-radius: 10px; color: #065f46; }
-    footer { text-align: center; padding: 24px; color: #94a3b8; font-size: 13px; }
-    .auth-overlay {
-      position: fixed; inset: 0; background: rgba(15,23,42,0.8);
-      display: flex; align-items: center; justify-content: center; z-index: 30;
-    }
-    .auth-card { background: #fff; padding: 24px; border-radius: 14px; width: 360px; box-shadow: 0 15px 40px rgba(0,0,0,0.2); }
-    .hidden { display: none; }
+    body { margin:0; font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--text); }
+    header { background:#0f172a; color:#fff; padding:16px 24px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:10; }
+    header h1 { margin:0; font-size:20px; }
+    main { padding:24px; max-width:1200px; margin:0 auto; }
+    .tabs { display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+    .tab { padding:10px 14px; border-radius:10px; border:1px solid #cbd5e1; background:var(--card); cursor:pointer; font-weight:600; transition:.2s; }
+    .tab.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .grid { display:grid; gap:16px; grid-template-columns: repeat(auto-fit,minmax(320px,1fr)); }
+    .card { background:var(--card); border-radius:14px; padding:16px; box-shadow:0 12px 32px rgba(15,23,42,0.06); border:1px solid #e2e8f0; }
+    h2 { margin:0 0 12px 0; font-size:18px; }
+    form { display:grid; gap:10px; }
+    label { font-size:13px; font-weight:600; color:#475569; }
+    input, select, textarea { width:100%; padding:10px; border-radius:10px; border:1px solid #cbd5e1; font:inherit; background:#f8fafc; }
+    textarea { min-height:70px; }
+    button.primary { background:linear-gradient(135deg,var(--primary),#1d4ed8); color:#fff; border:none; border-radius:10px; padding:10px 14px; font-weight:700; cursor:pointer; box-shadow:0 10px 25px rgba(37,99,235,0.35); }
+    table { width:100%; border-collapse:collapse; }
+    th,td { text-align:left; padding:10px; border-bottom:1px solid #e2e8f0; font-size:14px; }
+    th { background:#f8fafc; }
+    .badge { padding:4px 8px; border-radius:999px; font-size:12px; font-weight:700; }
+    .pill { display:inline-flex; align-items:center; gap:6px; padding:6px 10px; background:#eef2ff; color:#3730a3; border-radius:999px; font-size:13px; }
+    .alert { border-left:4px solid var(--accent); padding:10px 12px; background:#ecfdf3; border-radius:10px; color:#065f46; }
+    footer { text-align:center; padding:24px; color:#94a3b8; font-size:13px; }
+    .auth-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.8); display:flex; align-items:center; justify-content:center; z-index:30; }
+    .auth-card { background:#fff; padding:24px; border-radius:14px; width:360px; box-shadow:0 15px 40px rgba(0,0,0,0.2); }
+    .hidden { display:none; }
+    .kanban { overflow-x:auto; display:flex; gap:12px; padding-bottom:8px; }
+    .kanban-col { min-width:240px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px; }
+    .kanban-card { margin-bottom:8px; padding:8px; border-radius:10px; background:white; border:1px solid #e2e8f0; cursor:grab; }
   </style>
 </head>
 <body>
@@ -110,7 +53,7 @@
       <div><label>Email</label><input type="email" name="email" required></div>
       <div><label>Mot de passe</label><input type="password" name="password" required></div>
       <button class="primary" type="submit">Se connecter</button>
-      <div style="font-size:12px; color:#475569">Créez le premier compte dans Firebase Auth (email/password), puis connectez-vous ici.</div>
+      <div style="font-size:12px; color:#475569">Créez le premier compte dans Firebase Auth, puis connectez-vous ici.</div>
     </form>
   </div>
 </div>
@@ -146,7 +89,8 @@
       </div>
       <div class="card">
         <h2>Kanban Leads</h2>
-        <div id="leadKanban" style="overflow-x:auto; white-space:nowrap; display:flex; gap:12px;"></div>
+        <div id="leadKanban" class="kanban"></div>
+        <div id="leadList" style="margin-top:12px;"></div>
       </div>
     </div>
   </section>
@@ -259,10 +203,7 @@
   };
 
   const app = initializeApp(firebaseConfig);
-  initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider('marcokimyohan'),
-    isTokenAutoRefreshEnabled: true
-  });
+  initializeAppCheck(app, { provider: new ReCaptchaV3Provider('marcokimyohan'), isTokenAutoRefreshEnabled: true });
   const auth = getAuth(app);
   const db = getFirestore(app);
 
@@ -272,11 +213,7 @@
   document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(e.target));
-    try {
-      await signInWithEmailAndPassword(auth, data.email, data.password);
-    } catch (err) {
-      alert('Connexion impossible: ' + err.message);
-    }
+    try { await signInWithEmailAndPassword(auth, data.email, data.password); } catch (err) { alert('Connexion impossible: ' + err.message); }
   });
 
   onAuthStateChanged(auth, (user) => {
@@ -327,11 +264,7 @@
     columns.forEach(col => {
       const items = grouped[col.key] || [];
       const card = document.createElement('div');
-      card.style.minWidth = '240px';
-      card.style.background = '#f8fafc';
-      card.style.border = '1px solid #e2e8f0';
-      card.style.borderRadius = '12px';
-      card.style.padding = '10px';
+      card.className = 'kanban-col';
       card.dataset.status = col.key;
       card.ondragover = (ev) => ev.preventDefault();
       card.ondrop = async (ev) => {
@@ -342,20 +275,21 @@
         renderLeads();
       };
       card.innerHTML = `<div style="font-weight:700;margin-bottom:8px;">${col.title} (${items.length})</div>`;
+      if (items.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'alert';
+        empty.textContent = 'Aucun lead';
+        card.appendChild(empty);
+      }
       items.forEach(it => {
         const node = document.createElement('div');
-        node.style.marginBottom = '8px';
-        node.style.padding = '8px';
-        node.style.borderRadius = '10px';
-        node.style.background = 'white';
-        node.style.border = '1px solid #e2e8f0';
+        node.className = 'kanban-card';
         node.draggable = true;
-        node.ondragstart = (ev) => {
-          ev.dataTransfer?.setData('text/plain', it.id);
-        };
+        node.ondragstart = (ev) => ev.dataTransfer?.setData('text/plain', it.id);
         node.innerHTML = `<div style="font-weight:600">${it.fullName || ''}</div>
           <div style="font-size:12px;color:#475569">${it.email || ''}</div>
           <div class="pill" style="margin-top:6px;">${it.priority || ''}</div>`;
+        card.appendChild(node);
       });
       kanban.appendChild(card);
     });
@@ -507,31 +441,27 @@
     alert('Dossier créé');
   });
 
-  // Filters & export
   document.getElementById('leadStatusFilter').addEventListener('change', applyLeadFilters);
   document.getElementById('leadSearch').addEventListener('input', applyLeadFilters);
   document.getElementById('leadExport').addEventListener('click', () => exportCSV(leadSnapshot, ['fullName','email','phone','source','priority','status']));
 
-  document.getElementById('clientSearch').addEventListener('input', () => applyClientFilters && applyClientFilters());
-  document.getElementById('clientSegmentFilter').addEventListener('change', () => applyClientFilters && applyClientFilters());
-  document.getElementById('clientStatusFilter').addEventListener('change', () => applyClientFilters && applyClientFilters());
+  document.getElementById('clientSearch').addEventListener('input', applyClientFilters);
+  document.getElementById('clientSegmentFilter').addEventListener('change', applyClientFilters);
+  document.getElementById('clientStatusFilter').addEventListener('change', applyClientFilters);
   document.getElementById('clientExport').addEventListener('click', () => exportCSV(clientSnapshot, ['company','contact','email','phone','pack','segment','status','siret','billing']));
 
-  document.getElementById('fileSearch').addEventListener('input', () => applyFileFilters && applyFileFilters());
-  document.getElementById('fileStatusFilter').addEventListener('change', () => applyFileFilters && applyFileFilters());
+  document.getElementById('fileSearch').addEventListener('input', applyFileFilters);
+  document.getElementById('fileStatusFilter').addEventListener('change', applyFileFilters);
   document.getElementById('fileExport').addEventListener('click', () => exportCSV(fileSnapshot, ['fileNumber','client','finalClient','pack','status','consuel_status','enedis_status','edfoa_status','price','invoicingDate']));
 
   function exportCSV(rows, fields) {
     if (!rows || rows.length === 0) return alert('Rien à exporter');
     const header = fields.join(',');
-    const body = rows.map(r => fields.map(f => `"${(r[f]||'').toString().replace(/\"/g,'\"\"')}"`).join(',')).join('\\n');
-    const blob = new Blob([header + '\\n' + body], { type: 'text/csv;charset=utf-8;' });
+    const body = rows.map(r => fields.map(f => `"${(r[f]||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([header + '\n' + body], { type:'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = 'export.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+    a.href = url; a.download = 'export.csv'; a.click(); URL.revokeObjectURL(url);
   }
 </script>
 </body>
