@@ -1,9 +1,20 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // MVP: open access. Replace with proper auth rules before production.
+
+    // Leads: anyone can CREATE (for landing form), but only authenticated users can read/update/delete.
+    match /leads/{leadId} {
+      allow create: if request.resource != null
+        && request.resource.data.fullName is string
+        && request.resource.data.email is string
+        && request.resource.data.createdAt != null
+        && request.resource.data.size() <= 20;
+      allow read, update, delete: if request.auth != null;
+    }
+
+    // Authenticated access only for everything else (clients, files, activities, etc.).
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if request.auth != null;
     }
   }
 }

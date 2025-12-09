@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Solaire Admin CRM (MVP)</title>
+  <title>Solaire Admin CRM</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -89,13 +89,32 @@
     .pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; background: #eef2ff; color: #3730a3; border-radius: 999px; font-size: 13px; }
     .alert { border-left: 4px solid var(--accent); padding: 10px 12px; background: #ecfdf3; border-radius: 10px; color: #065f46; }
     footer { text-align: center; padding: 24px; color: #94a3b8; font-size: 13px; }
+    .auth-overlay {
+      position: fixed; inset: 0; background: rgba(15,23,42,0.8);
+      display: flex; align-items: center; justify-content: center; z-index: 30;
+    }
+    .auth-card { background: #fff; padding: 24px; border-radius: 14px; width: 360px; box-shadow: 0 15px 40px rgba(0,0,0,0.2); }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
 <header>
-  <h1>⚡️ Solaire Admin CRM (MVP)</h1>
-  <div style="font-size:13px; opacity:0.8">Firestore + Functions + Hosting</div>
+  <h1>⚡️ Solaire Admin CRM</h1>
+  <div id="userInfo" style="font-size:13px; opacity:0.8"></div>
 </header>
+
+<div id="auth" class="auth-overlay hidden">
+  <div class="auth-card">
+    <h2>Connexion</h2>
+    <form id="loginForm" style="margin-top:12px; display:grid; gap:10px;">
+      <div><label>Email</label><input type="email" name="email" required></div>
+      <div><label>Mot de passe</label><input type="password" name="password" required></div>
+      <button class="primary" type="submit">Se connecter</button>
+      <div style="font-size:12px; color:#475569">Créez le premier compte dans Firebase Auth (email/password), puis connectez-vous ici.</div>
+    </form>
+  </div>
+</div>
+
 <main>
   <div class="tabs">
     <div class="tab active" data-tab="leads">Leads</div>
@@ -108,44 +127,15 @@
       <div class="card">
         <h2>Créer un lead</h2>
         <form id="leadForm">
-          <div>
-            <label>Nom complet</label>
-            <input name="fullName" required />
-          </div>
-          <div>
-            <label>Email</label>
-            <input name="email" type="email" required />
-          </div>
-          <div>
-            <label>Téléphone</label>
-            <input name="phone" />
-          </div>
-          <div>
-            <label>Source</label>
-            <select name="source">
-              <option>Landing</option>
-              <option>Référence</option>
-              <option>Appel direct</option>
-              <option>LinkedIn</option>
-            </select>
-          </div>
-          <div>
-            <label>Priorité</label>
-            <select name="priority">
-              <option>Basse</option>
-              <option>Moyenne</option>
-              <option>Haute</option>
-              <option>Urgente</option>
-            </select>
-          </div>
-          <div>
-            <label>Notes</label>
-            <textarea name="notes"></textarea>
-          </div>
+          <div><label>Nom complet</label><input name="fullName" required /></div>
+          <div><label>Email</label><input name="email" type="email" required /></div>
+          <div><label>Téléphone</label><input name="phone" /></div>
+          <div><label>Source</label><select name="source"><option>Landing</option><option>Référence</option><option>Appel direct</option><option>LinkedIn</option></select></div>
+          <div><label>Priorité</label><select name="priority"><option>Basse</option><option>Moyenne</option><option>Haute</option><option>Urgente</option></select></div>
+          <div><label>Notes</label><textarea name="notes"></textarea></div>
           <button class="primary" type="submit">Ajouter</button>
         </form>
       </div>
-
       <div class="card">
         <h2>Leads récents</h2>
         <div id="leadList" class="alert">Chargement...</div>
@@ -193,10 +183,11 @@
     </div>
   </section>
 </main>
-<footer>Build Firebase Hosting + Firestore • MVP opérable • Déc 2025</footer>
+<footer>Build Firebase Hosting + Firestore • Auth email/password • Déc 2025</footer>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
   import { getFirestore, collection, addDoc, getDocs, serverTimestamp, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -210,7 +201,36 @@
   };
 
   const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
   const db = getFirestore(app);
+
+  const authOverlay = document.getElementById('auth');
+  const userInfo = document.getElementById('userInfo');
+
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(e.target));
+    try {
+      await signInWithEmailAndPassword(auth, data.email, data.password);
+    } catch (err) {
+      alert('Connexion impossible: ' + err.message);
+    }
+  });
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      authOverlay.classList.add('hidden');
+      userInfo.textContent = `${user.email} — Déconnexion`;
+      userInfo.style.cursor = 'pointer';
+      userInfo.onclick = () => signOut(auth);
+      renderLeads();
+      renderClients();
+      renderFiles();
+    } else {
+      authOverlay.classList.remove('hidden');
+      userInfo.textContent = '';
+    }
+  });
 
   const tabs = document.querySelectorAll('.tab');
   const panes = document.querySelectorAll('.tab-pane');
@@ -291,10 +311,6 @@
     renderFiles();
     alert('Dossier créé');
   });
-
-  renderLeads();
-  renderClients();
-  renderFiles();
 </script>
 </body>
 </html>
