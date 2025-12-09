@@ -266,11 +266,16 @@
       { title: 'Qualifié', key: 'Qualifié' },
       { title: 'Devis envoyé', key: 'Devis envoyé' },
       { title: 'Gagné', key: 'Gagné' },
-      { title: 'Perdu', key: 'Perdu' }
+      { title: 'Perdu', key: 'Perdu' },
+      { title: 'Converti', key: 'Converti' }
     ];
     const grouped = {};
     columns.forEach(c => grouped[c.key] = []);
-    rows.forEach(r => grouped[r.status || 'Nouveau'].push(r));
+    rows.forEach(r => {
+      const candidate = r.status || 'Nouveau';
+      const status = grouped[candidate] ? candidate : 'Nouveau';
+      grouped[status].push(r);
+    });
 
     const kanban = document.getElementById('leadKanban');
     kanban.innerHTML = '';
