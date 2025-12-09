@@ -513,9 +513,27 @@
         annual_revenue: lead.annual_revenue || '',
         createdAt: serverTimestamp()
       });
+      // Créer un dossier initial
+      const seq = Math.floor(Date.now() / 1000);
+      const fileNumber = `DOS-${new Date().getFullYear()}-${String(seq).slice(-4)}`;
+      await addDoc(collection(db, 'files'), {
+        fileNumber,
+        client: lead.company || lead.fullName || '',
+        finalClient: lead.fullName || '',
+        address: lead.address || '',
+        pack: lead.desired_pack || 'Validation',
+        status: 'En attente documents',
+        consuel_status: 'À faire',
+        enedis_status: 'À faire',
+        edfoa_status: 'Non applicable',
+        price: '',
+        invoicingDate: '',
+        createdAt: serverTimestamp()
+      });
       await updateDoc(doc(db, 'leads', id), { status: 'Converti', client_id_created: true, updatedAt: serverTimestamp() });
       renderLeads();
       renderClients();
+      renderFiles();
       alert('Lead converti en client.');
     }
   });
