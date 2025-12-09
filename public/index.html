@@ -265,15 +265,6 @@
       const items = grouped[col.key] || [];
       const card = document.createElement('div');
       card.className = 'kanban-col';
-      card.dataset.status = col.key;
-      card.ondragover = (ev) => ev.preventDefault();
-      card.ondrop = async (ev) => {
-        ev.preventDefault();
-        const id = ev.dataTransfer?.getData('text/plain');
-        if (!id) return;
-        await updateDoc(doc(db, 'leads', id), { status: col.key, updatedAt: serverTimestamp() });
-        renderLeads();
-      };
       card.innerHTML = `<div style="font-weight:700;margin-bottom:8px;">${col.title} (${items.length})</div>`;
       if (items.length === 0) {
         const empty = document.createElement('div');
@@ -284,11 +275,16 @@
       items.forEach(it => {
         const node = document.createElement('div');
         node.className = 'kanban-card';
-        node.draggable = true;
-        node.ondragstart = (ev) => ev.dataTransfer?.setData('text/plain', it.id);
         node.innerHTML = `<div style="font-weight:600">${it.fullName || ''}</div>
           <div style="font-size:12px;color:#475569">${it.email || ''}</div>
-          <div class="pill" style="margin-top:6px;">${it.priority || ''}</div>`;
+          <div class="pill" style="margin-top:6px;">${it.priority || ''}</div>
+          <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+            <label style="font-size:12px;color:#475569;">Statut</label>
+            <select data-id="${it.id}" class="lead-status-select" style="flex:1; min-width:140px; padding:6px 8px; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc;">
+              ${columns.map(c => `<option value="${c.key}" ${c.key === (it.status || 'Nouveau') ? 'selected' : ''}>${c.key}</option>`).join('')}
+            </select>
+            <button data-id="${it.id}" class="primary lead-convert" style="padding:6px 10px; font-size:12px;">Convertir en client</button>
+          </div>`;
         card.appendChild(node);
       });
       kanban.appendChild(card);
@@ -463,6 +459,38 @@
     const a = document.createElement('a');
     a.href = url; a.download = 'export.csv'; a.click(); URL.revokeObjectURL(url);
   }
+
+  // Inline status change + convert lead
+  document.addEventListener('change', async (e) => {
+    if (e.target.classList.contains('lead-status-select')) {
+      const id = e.target.getAttribute('data-id');
+      const value = e.target.value;
+      await updateDoc(doc(db, 'leads', id), { status: value, updatedAt: serverTimestamp() });
+      renderLeads();
+    }
+  });
+
+  document.addEventListener('click', async (e) => {
+    if (e.target.classList.contains('lead-convert')) {
+      const id = e.target.getAttribute('data-id');
+      const lead = leadSnapshot.find(l => l.id === id);
+      if (!lead) return;
+      await addDoc(collection(db, 'clients'), {
+        company: lead.company || lead.fullName || '',
+        contact: lead.fullName || '',
+        email: lead.email || '',
+        phone: lead.phone || '',
+        pack: lead.desired_pack || lead.priority || '',
+        segment: 'Petit',
+        status: 'Actif',
+        createdAt: serverTimestamp()
+      });
+      await updateDoc(doc(db, 'leads', id), { status: 'Converti', client_id_created: true, updatedAt: serverTimestamp() });
+      renderLeads();
+      renderClients();
+      alert('Lead converti en client.');
+    }
+  });
 </script>
 </body>
 </html>
