@@ -71,10 +71,20 @@
         <h2>Créer un lead</h2>
         <form id="leadForm">
           <div><label>Nom complet</label><input name="fullName" required /></div>
+          <div><label>Entreprise</label><input name="company" /></div>
           <div><label>Email</label><input name="email" type="email" required /></div>
           <div><label>Téléphone</label><input name="phone" /></div>
+          <div><label>Adresse</label><input name="address" /></div>
+          <div><label>Site web</label><input name="website" /></div>
           <div><label>Source</label><select name="source"><option>Landing</option><option>Référence</option><option>Appel direct</option><option>LinkedIn</option></select></div>
           <div><label>Priorité</label><select name="priority"><option>Basse</option><option>Moyenne</option><option>Haute</option><option>Urgente</option></select></div>
+          <div><label>Nombre de dossiers bloqués</label><select name="blocked_files_count"><option value=\"\">--</option><option>1-5</option><option>6-10</option><option>11-20</option><option>21-50</option><option>50+</option></select></div>
+          <div><label>Type de blocage</label><select name="blocking_type"><option value=\"\">--</option><option>Consuel</option><option>Enedis</option><option>EDF OA</option><option>Tout</option></select></div>
+          <div><label>Pack souhaité</label><select name="desired_pack"><option value=\"\">--</option><option>Validation</option><option>Mise en service</option><option>Zéro Stress</option></select></div>
+          <div class="grid" style="grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap:10px;">
+            <div><label>Volume mensuel (chantiers)</label><input name="monthly_volume" type="number" min="0" /></div>
+            <div><label>CA annuel (€)</label><input name="annual_revenue" type="number" min="0" /></div>
+          </div>
           <div><label>Notes</label><textarea name="notes"></textarea></div>
           <button class="primary" type="submit">Ajouter</button>
         </form>
@@ -278,6 +288,7 @@
         node.innerHTML = `<div style="font-weight:600">${it.fullName || ''}</div>
           <div style="font-size:12px;color:#475569">${it.email || ''}</div>
           <div class="pill" style="margin-top:6px;">${it.priority || ''}</div>
+          <div style="font-size:12px;color:#334155;margin-top:4px;">Pack: ${it.desired_pack || '-'} · Blocage: ${it.blocking_type || '-'}</div>
           <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
             <label style="font-size:12px;color:#475569;">Statut</label>
             <select data-id="${it.id}" class="lead-status-select" style="flex:1; min-width:140px; padding:6px 8px; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc;">
@@ -485,18 +496,21 @@
       })();
       await addDoc(collection(db, 'clients'), {
         company: lead.company || lead.fullName || '',
+        legal_name: lead.company || lead.fullName || '',
         contact: lead.fullName || '',
         email: lead.email || '',
         phone: lead.phone || '',
         pack: lead.desired_pack || lead.priority || '',
         segment,
         status: 'Actif',
-        billing: '',
+        billing: lead.address || '',
         contractStart: '',
         contractEnd: '',
         customRate: '',
-        discount: '',
+        discount: lead.discount || '',
         paymentTerms: 30,
+        siret: lead.siret || '',
+        annual_revenue: lead.annual_revenue || '',
         createdAt: serverTimestamp()
       });
       await updateDoc(doc(db, 'leads', id), { status: 'Converti', client_id_created: true, updatedAt: serverTimestamp() });
